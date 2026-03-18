@@ -50,35 +50,32 @@
         </div>
         <div class="gs-stopwatch-submission" id="gs-stopwatch-submission"></div>
         <div class="gs-stopwatch-previous" id="gs-stopwatch-previous" hidden></div>
-        <div class="gs-stopwatch-footer">
-          <span class="gs-stopwatch-footer-spacer" aria-hidden="true"></span>
-          <button
-            type="button"
-            class="gs-stopwatch-nav"
-            id="gs-stopwatch-show-cumulative"
-            aria-label="Show question cumulative time"
-            title="Show question cumulative time"
-          >
-            &#8250;
-          </button>
-        </div>
+        <button
+          type="button"
+          class="gs-stopwatch-nav gs-stopwatch-nav-side"
+          id="gs-stopwatch-show-cumulative"
+          aria-label="Show question cumulative time"
+          title="Show question cumulative time"
+        >
+          &#8250;
+        </button>
       </div>
       <div class="gs-stopwatch-view" id="gs-stopwatch-cumulative-view" hidden>
         <div class="gs-stopwatch-secondary-header">
-          <button
-            type="button"
-            class="gs-stopwatch-nav"
-            id="gs-stopwatch-hide-cumulative"
-            aria-label="Back to submission timer"
-            title="Back to submission timer"
-          >
-            &#8249;
-          </button>
           <span class="gs-stopwatch-secondary-label">Question cumulative time</span>
         </div>
         <div class="gs-stopwatch-secondary">
           <span class="gs-stopwatch-secondary-time" id="gs-stopwatch-cumulative-time">00:00</span>
         </div>
+        <button
+          type="button"
+          class="gs-stopwatch-nav gs-stopwatch-nav-side"
+          id="gs-stopwatch-hide-cumulative"
+          aria-label="Back to submission timer"
+          title="Back to submission timer"
+        >
+          &#8249;
+        </button>
       </div>
     `;
 
