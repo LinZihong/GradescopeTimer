@@ -27,6 +27,7 @@
   let lastKnownPath = window.location.pathname;
   let showingCumulative = false;
   let previousSubmission = null;
+  let dragState = null;
 
   let root = document.getElementById(ROOT_ID);
   if (!root) {
@@ -207,6 +208,59 @@
     }
   }
 
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function updateDraggedPosition(clientX, clientY) {
+    if (!dragState) {
+      return;
+    }
+
+    const maxLeft = Math.max(window.innerWidth - dragState.width, 0);
+    const maxTop = Math.max(window.innerHeight - dragState.height, 0);
+    const nextLeft = clamp(clientX - dragState.offsetX, 0, maxLeft);
+    const nextTop = clamp(clientY - dragState.offsetY, 0, maxTop);
+
+    root.style.left = `${nextLeft}px`;
+    root.style.top = `${nextTop}px`;
+    root.style.right = "auto";
+  }
+
+  function startDragging(event) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const rect = root.getBoundingClientRect();
+    dragState = {
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      width: rect.width,
+      height: rect.height
+    };
+
+    root.classList.add("is-dragging");
+    updateDraggedPosition(event.clientX, event.clientY);
+  }
+
+  function handleDragMove(event) {
+    if (!dragState) {
+      return;
+    }
+
+    updateDraggedPosition(event.clientX, event.clientY);
+  }
+
+  function stopDragging() {
+    if (!dragState) {
+      return;
+    }
+
+    dragState = null;
+    root.classList.remove("is-dragging");
+  }
+
   function startTicker() {
     clearInterval(tickerId);
     tickerId = setInterval(() => {
@@ -247,15 +301,21 @@
   }
 
   function wireEvents() {
+    const titleWrap = root.querySelector(".gs-stopwatch-title-wrap");
     const toggle = root.querySelector("#gs-stopwatch-toggle");
     const resetBtn = root.querySelector("#gs-stopwatch-reset");
     const showCumulativeBtn = root.querySelector("#gs-stopwatch-show-cumulative");
     const hideCumulativeBtn = root.querySelector("#gs-stopwatch-hide-cumulative");
 
+    titleWrap?.addEventListener("pointerdown", startDragging);
     toggle?.addEventListener("click", () => setRunning(!running));
     resetBtn?.addEventListener("click", reset);
     showCumulativeBtn?.addEventListener("click", () => setView("cumulative"));
     hideCumulativeBtn?.addEventListener("click", () => setView("main"));
+
+    window.addEventListener("pointermove", handleDragMove);
+    window.addEventListener("pointerup", stopDragging);
+    window.addEventListener("pointercancel", stopDragging);
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {

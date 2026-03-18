@@ -29,10 +29,16 @@
   font-size: 13px;
   font-weight: 700;
   color: #166534;
+  cursor: move;
+  user-select: none;
 }
 
 #gs-stopwatch-root.is-paused .gs-stopwatch-title-wrap {
   color: #92400e;
+}
+
+#gs-stopwatch-root.is-dragging {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
 }
 
 .gs-stopwatch-dot {
