@@ -1,31 +1,49 @@
-# Gradescope Submission Stopwatch (Chrome Extension)
+# Gradescope Submission Stopwatch
 
-A lightweight Manifest V3 Chrome extension that injects a stopwatch into Gradescope submission grading pages.
+A Chrome extension that adds a grading timer directly to Gradescope submission pages.
 
-## What it does
+It is designed for the common grading workflow where you move from one submission to the next inside Gradescope and want to keep track of how long each one takes.
 
-- Activates on URLs that look like:
-  - `https://www.gradescope.com/courses/<course_id>/questions/<question_id>/submissions/<submission_id>/grade`
-- Shows a visible **"Gradescope Timer Active"** panel.
-- Shows the **current submission stopwatch** prominently.
-- Resets to a fresh stopwatch when Gradescope navigates to a different submission via in-page SPA routing.
-- Provides **Pause/Resume** and **Reset** controls.
-- Saves per-submission elapsed time in `chrome.storage.local` so refreshes keep your time.
-- Computes a per-question cumulative total, shown in a secondary expandable section so it is less visually prominent.
+![Example](demo.png)
 
-## Install (developer mode)
+## Install
 
 1. Open Chrome and go to `chrome://extensions`.
-2. Enable **Developer mode**.
-3. Click **Load unpacked**.
-4. Select this folder (`GradescopeTimer`).
+2. Turn on `Developer mode`.
+3. Click `Load unpacked`.
+4. Select this folder: `GradescopeTimer`.
+5. Open a Gradescope submission grading page.
 
-## Files
+## Features
 
-- `manifest.json` – extension manifest and URL match pattern.
-- `content.js` – timer logic, SPA route handling, persistence, and page injection.
-- `styles.css` – timer panel styles.
+- Shows a clear stopwatch overlay on Gradescope grading pages
+- Starts a fresh timer for each submission
+- Supports `Pause`, `Resume`, and `Reset`
+- Remembers time for each submission if you refresh the page
+- Shows the previous submission's time under the current timer
+- Includes a cumulative view for question-wide and current-session stats
+- Lets you drag the timer overlay anywhere on the page
 
-## Note on PR compatibility
+## Where it appears
 
-This version intentionally avoids binary assets (like PNG icons) so patch-only Git/PR tools that reject binary files can accept the diff cleanly.
+The extension activates on grading URLs like:
+
+`https://www.gradescope.com/courses/<course_id>/questions/<question_id>/submissions/<submission_id>/grade`
+
+## Cumulative View
+
+The side arrow opens a secondary view with:
+
+- `Question cumulative time`: total stored time for this question
+- `Session total`: total for earlier submissions visited in the current page-load session
+- `Session average`: average over completed submissions in the current page-load session
+- `Visited this session`: how many unique submissions you have visited in the current page-load session, excluding the current one from the average
+
+A new session starts when the grading page is loaded normally, such as opening it from elsewhere or refreshing the page. Moving between submissions inside Gradescope's SPA keeps you in the same session.
+
+## Project Files
+
+- `manifest.json`: Chrome extension manifest
+- `content.js`: timer logic, persistence, SPA handling, and UI behavior
+- `styles.css`: overlay styling
+- `icons/`: extension icons
