@@ -91,6 +91,11 @@
   color: #475569;
 }
 
+.gs-stopwatch-previous {
+  font-size: 11px;
+  color: #64748b;
+}
+
 .gs-stopwatch-footer {
   display: flex;
   align-items: center;

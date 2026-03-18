@@ -26,6 +26,7 @@
   let tickerId;
   let lastKnownPath = window.location.pathname;
   let showingCumulative = false;
+  let previousSubmission = null;
 
   let root = document.getElementById(ROOT_ID);
   if (!root) {
@@ -47,6 +48,7 @@
           </div>
         </div>
         <div class="gs-stopwatch-submission" id="gs-stopwatch-submission"></div>
+        <div class="gs-stopwatch-previous" id="gs-stopwatch-previous" hidden></div>
         <div class="gs-stopwatch-footer">
           <span class="gs-stopwatch-footer-spacer" aria-hidden="true"></span>
           <button
@@ -119,6 +121,7 @@
   function render() {
     const timeNode = root.querySelector("#gs-stopwatch-time");
     const submissionNode = root.querySelector("#gs-stopwatch-submission");
+    const previousNode = root.querySelector("#gs-stopwatch-previous");
 
     if (timeNode) {
       timeNode.textContent = formatDuration(getDisplayElapsedMs());
@@ -126,6 +129,16 @@
 
     if (submissionNode) {
       submissionNode.textContent = `Submission #${route.submissionId}`;
+    }
+
+    if (previousNode) {
+      if (previousSubmission) {
+        previousNode.textContent = `Last submission #${previousSubmission.submissionId}: ${formatDuration(previousSubmission.elapsedMs)}`;
+        previousNode.removeAttribute("hidden");
+      } else {
+        previousNode.textContent = "";
+        previousNode.setAttribute("hidden", "");
+      }
     }
   }
 
@@ -259,6 +272,10 @@
       return;
     }
 
+    previousSubmission = {
+      submissionId: route.submissionId,
+      elapsedMs: getDisplayElapsedMs()
+    };
     persist();
 
     route = nextRoute;
