@@ -1,7 +1,6 @@
 (() => {
   const ROOT_ID = "gs-stopwatch-root";
   const STORAGE_PREFIX = "gradescope-stopwatch";
-  const SESSION_PREFIX = `${STORAGE_PREFIX}:session`;
   const ROUTE_PATTERN = /^\/courses\/(\d+)\/questions\/(\d+)\/submissions\/(\d+)\/grade\/?/;
 
   function parseRoute(pathname) {
@@ -29,6 +28,9 @@
   let showingCumulative = false;
   let previousSubmission = null;
   let dragState = null;
+  const sessionVisitedSubmissions = {
+    [initialRoute.submissionId]: true
+  };
 
   let root = document.getElementById(ROOT_ID);
   if (!root) {
@@ -104,10 +106,6 @@
 
   function buildQuestionPrefix(ids) {
     return `${STORAGE_PREFIX}:${ids.courseId}:${ids.questionId}:`;
-  }
-
-  function buildQuestionSessionKey(ids) {
-    return `${SESSION_PREFIX}:${ids.courseId}:${ids.questionId}`;
   }
 
   function pad(value) {
@@ -256,55 +254,31 @@
 
   function refreshCumulative() {
     const questionPrefix = buildQuestionPrefix(route);
-    const sessionKey = buildQuestionSessionKey(route);
-
     safeStorageGet("local", null, (allValues) => {
-      safeStorageGet("session", sessionKey, (sessionValues) => {
-        const values = allValues ?? {};
-        const sessionState = sessionValues?.[sessionKey];
-        const visitedSubmissions = sessionState?.submissionIds ?? {};
-        let questionTotalMs = 0;
-        let sessionTotalMs = 0;
+      const values = allValues ?? {};
+      let questionTotalMs = 0;
+      let sessionTotalMs = 0;
 
-        Object.entries(values).forEach(([key, value]) => {
-          if (!key.startsWith(questionPrefix) || !value || typeof value.elapsedMs !== "number") {
-            return;
-          }
-
-          const submissionId = key.slice(questionPrefix.length);
-          const submissionElapsedMs = key === storageKey ? getDisplayElapsedMs() : value.elapsedMs;
-          questionTotalMs += submissionElapsedMs;
-
-          if (visitedSubmissions[submissionId]) {
-            sessionTotalMs += submissionElapsedMs;
-          }
-        });
-
-        const sessionCount = Object.keys(visitedSubmissions).length;
-        renderCumulative({
-          questionTotalMs,
-          sessionTotalMs,
-          sessionAverageMs: sessionCount > 0 ? Math.round(sessionTotalMs / sessionCount) : 0,
-          sessionCount
-        });
-      });
-    });
-  }
-
-  function markSubmissionVisited(ids) {
-    const sessionKey = buildQuestionSessionKey(ids);
-
-    safeStorageGet("session", sessionKey, (result) => {
-      const currentState = result?.[sessionKey] ?? {};
-      const submissionIds = {
-        ...(currentState.submissionIds ?? {}),
-        [ids.submissionId]: true
-      };
-
-      safeStorageSet("session", {
-        [sessionKey]: {
-          submissionIds
+      Object.entries(values).forEach(([key, value]) => {
+        if (!key.startsWith(questionPrefix) || !value || typeof value.elapsedMs !== "number") {
+          return;
         }
+
+        const submissionId = key.slice(questionPrefix.length);
+        const submissionElapsedMs = key === storageKey ? getDisplayElapsedMs() : value.elapsedMs;
+        questionTotalMs += submissionElapsedMs;
+
+        if (sessionVisitedSubmissions[submissionId] && submissionId !== route.submissionId) {
+          sessionTotalMs += submissionElapsedMs;
+        }
+      });
+
+      const sessionCount = Math.max(Object.keys(sessionVisitedSubmissions).length - 1, 0);
+      renderCumulative({
+        questionTotalMs,
+        sessionTotalMs,
+        sessionAverageMs: sessionCount > 0 ? Math.round(sessionTotalMs / sessionCount) : 0,
+        sessionCount
       });
     });
   }
@@ -457,7 +431,7 @@
     elapsedMs = 0;
     running = true;
     startedAtMs = Date.now();
-    markSubmissionVisited(route);
+    sessionVisitedSubmissions[route.submissionId] = true;
 
     const toggle = root.querySelector("#gs-stopwatch-toggle");
     if (toggle) {
@@ -535,8 +509,6 @@
   }
 
   function restoreInitialStateAndStart() {
-    markSubmissionVisited(route);
-
     safeStorageGet("local", storageKey, (result) => {
       const stored = result?.[storageKey];
 

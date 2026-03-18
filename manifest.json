@@ -3,9 +3,6 @@
   "name": "Gradescope Submission Stopwatch",
   "description": "Displays a stopwatch on Gradescope submission grading pages to track grading time per submission.",
   "version": "0.1.0",
-  "background": {
-    "service_worker": "background.js"
-  },
   "content_scripts": [
     {
       "matches": [
