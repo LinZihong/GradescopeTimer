@@ -1,6 +1,7 @@
 (() => {
   const ROOT_ID = "gs-stopwatch-root";
   const STORAGE_PREFIX = "gradescope-stopwatch";
+  const SESSION_PREFIX = `${STORAGE_PREFIX}:session`;
   const ROUTE_PATTERN = /^\/courses\/(\d+)\/questions\/(\d+)\/submissions\/(\d+)\/grade\/?/;
 
   function parseRoute(pathname) {
@@ -67,6 +68,20 @@
         <div class="gs-stopwatch-secondary">
           <span class="gs-stopwatch-secondary-time" id="gs-stopwatch-cumulative-time">00:00</span>
         </div>
+        <div class="gs-stopwatch-stats">
+          <div class="gs-stopwatch-stat">
+            <span class="gs-stopwatch-stat-label">Session total</span>
+            <span class="gs-stopwatch-stat-value" id="gs-stopwatch-session-time">00:00</span>
+          </div>
+          <div class="gs-stopwatch-stat">
+            <span class="gs-stopwatch-stat-label">Session average</span>
+            <span class="gs-stopwatch-stat-value" id="gs-stopwatch-session-average">00:00</span>
+          </div>
+          <div class="gs-stopwatch-stat">
+            <span class="gs-stopwatch-stat-label">Visited this session</span>
+            <span class="gs-stopwatch-stat-value" id="gs-stopwatch-session-count">0</span>
+          </div>
+        </div>
         <button
           type="button"
           class="gs-stopwatch-nav gs-stopwatch-nav-side"
@@ -89,6 +104,10 @@
 
   function buildQuestionPrefix(ids) {
     return `${STORAGE_PREFIX}:${ids.courseId}:${ids.questionId}:`;
+  }
+
+  function buildQuestionSessionKey(ids) {
+    return `${SESSION_PREFIX}:${ids.courseId}:${ids.questionId}`;
   }
 
   function pad(value) {
@@ -140,11 +159,16 @@
     }
   }
 
-  function renderCumulative(totalMs) {
+  function renderCumulative(stats) {
     const cumulativeNode = root.querySelector("#gs-stopwatch-cumulative-time");
-    if (cumulativeNode) {
-      cumulativeNode.textContent = formatDuration(totalMs);
-    }
+    const sessionNode = root.querySelector("#gs-stopwatch-session-time");
+    const averageNode = root.querySelector("#gs-stopwatch-session-average");
+    const countNode = root.querySelector("#gs-stopwatch-session-count");
+
+    cumulativeNode.textContent = formatDuration(stats.questionTotalMs);
+    sessionNode.textContent = formatDuration(stats.sessionTotalMs);
+    averageNode.textContent = formatDuration(stats.sessionAverageMs);
+    countNode.textContent = String(stats.sessionCount);
   }
 
   function setView(nextView) {
@@ -164,6 +188,60 @@
     mainView?.removeAttribute("hidden");
   }
 
+  function getStorageArea(areaName) {
+    try {
+      if (!chrome?.runtime?.id || !chrome?.storage?.[areaName]) {
+        return null;
+      }
+
+      return chrome.storage[areaName];
+    } catch {
+      return null;
+    }
+  }
+
+  function safeStorageGet(areaName, keys, callback) {
+    const area = getStorageArea(areaName);
+    if (!area) {
+      callback(null);
+      return;
+    }
+
+    try {
+      area.get(keys, (result) => {
+        if (chrome.runtime?.lastError) {
+          callback(null);
+          return;
+        }
+
+        callback(result ?? {});
+      });
+    } catch {
+      callback(null);
+    }
+  }
+
+  function safeStorageSet(areaName, items, callback) {
+    const area = getStorageArea(areaName);
+    if (!area) {
+      callback?.(false);
+      return;
+    }
+
+    try {
+      area.set(items, () => {
+        if (chrome.runtime?.lastError) {
+          callback?.(false);
+          return;
+        }
+
+        callback?.(true);
+      });
+    } catch {
+      callback?.(false);
+    }
+  }
+
   function persist() {
     const payload = {
       elapsedMs: getDisplayElapsedMs(),
@@ -171,24 +249,63 @@
       savedAt: Date.now()
     };
 
-    chrome.storage.local.set({ [storageKey]: payload }, refreshCumulative);
+    safeStorageSet("local", { [storageKey]: payload }, () => {
+      refreshCumulative();
+    });
   }
 
   function refreshCumulative() {
     const questionPrefix = buildQuestionPrefix(route);
-    chrome.storage.local.get(null, (allValues) => {
-      let totalMs = 0;
-      Object.entries(allValues).forEach(([key, value]) => {
-        if (!key.startsWith(questionPrefix)) {
-          return;
-        }
+    const sessionKey = buildQuestionSessionKey(route);
 
-        if (value && typeof value.elapsedMs === "number") {
-          totalMs += value.elapsedMs;
+    safeStorageGet("local", null, (allValues) => {
+      safeStorageGet("session", sessionKey, (sessionValues) => {
+        const values = allValues ?? {};
+        const sessionState = sessionValues?.[sessionKey];
+        const visitedSubmissions = sessionState?.submissionIds ?? {};
+        let questionTotalMs = 0;
+        let sessionTotalMs = 0;
+
+        Object.entries(values).forEach(([key, value]) => {
+          if (!key.startsWith(questionPrefix) || !value || typeof value.elapsedMs !== "number") {
+            return;
+          }
+
+          const submissionId = key.slice(questionPrefix.length);
+          const submissionElapsedMs = key === storageKey ? getDisplayElapsedMs() : value.elapsedMs;
+          questionTotalMs += submissionElapsedMs;
+
+          if (visitedSubmissions[submissionId]) {
+            sessionTotalMs += submissionElapsedMs;
+          }
+        });
+
+        const sessionCount = Object.keys(visitedSubmissions).length;
+        renderCumulative({
+          questionTotalMs,
+          sessionTotalMs,
+          sessionAverageMs: sessionCount > 0 ? Math.round(sessionTotalMs / sessionCount) : 0,
+          sessionCount
+        });
+      });
+    });
+  }
+
+  function markSubmissionVisited(ids) {
+    const sessionKey = buildQuestionSessionKey(ids);
+
+    safeStorageGet("session", sessionKey, (result) => {
+      const currentState = result?.[sessionKey] ?? {};
+      const submissionIds = {
+        ...(currentState.submissionIds ?? {}),
+        [ids.submissionId]: true
+      };
+
+      safeStorageSet("session", {
+        [sessionKey]: {
+          submissionIds
         }
       });
-
-      renderCumulative(totalMs);
     });
   }
 
@@ -340,6 +457,7 @@
     elapsedMs = 0;
     running = true;
     startedAtMs = Date.now();
+    markSubmissionVisited(route);
 
     const toggle = root.querySelector("#gs-stopwatch-toggle");
     if (toggle) {
@@ -349,8 +467,8 @@
     root.classList.remove("is-paused");
     render();
 
-    chrome.storage.local.get(storageKey, (result) => {
-      const stored = result[storageKey];
+    safeStorageGet("local", storageKey, (result) => {
+      const stored = result?.[storageKey];
       if (stored && typeof stored.elapsedMs === "number") {
         elapsedMs = stored.elapsedMs;
         running = Boolean(stored.running);
@@ -417,8 +535,10 @@
   }
 
   function restoreInitialStateAndStart() {
-    chrome.storage.local.get(storageKey, (result) => {
-      const stored = result[storageKey];
+    markSubmissionVisited(route);
+
+    safeStorageGet("local", storageKey, (result) => {
+      const stored = result?.[storageKey];
 
       if (stored && typeof stored.elapsedMs === "number") {
         elapsedMs = stored.elapsedMs;
