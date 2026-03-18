@@ -137,9 +137,14 @@
     const timeNode = root.querySelector("#gs-stopwatch-time");
     const submissionNode = root.querySelector("#gs-stopwatch-submission");
     const previousNode = root.querySelector("#gs-stopwatch-previous");
+    const titleNode = root.querySelector(".gs-stopwatch-title");
 
     if (timeNode) {
       timeNode.textContent = formatDuration(getDisplayElapsedMs());
+    }
+
+    if (titleNode) {
+      titleNode.textContent = running ? "Gradescope Timer Active" : "Gradescope Timer Inactive";
     }
 
     if (submissionNode) {
