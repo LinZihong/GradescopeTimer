@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Gradescope Submission Stopwatch",
+  "version": "0.1.0",
+  "description": "Displays a stopwatch on Gradescope submission grading pages.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.gradescope.com/courses/*/questions/*/submissions/*/grade*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
