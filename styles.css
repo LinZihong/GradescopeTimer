@@ -13,6 +13,10 @@
   padding: 12px;
 }
 
+#gs-stopwatch-root [hidden] {
+  display: none !important;
+}
+
 #gs-stopwatch-root.is-paused {
   border-color: #b45309;
 }
@@ -49,6 +53,12 @@
   gap: 8px;
 }
 
+.gs-stopwatch-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .gs-stopwatch-time {
   font-size: 34px;
   font-weight: 700;
@@ -61,8 +71,7 @@
   gap: 6px;
 }
 
-.gs-stopwatch-actions button,
-.gs-stopwatch-secondary-toggle {
+.gs-stopwatch-actions button {
   border: 1px solid #94a3b8;
   background: #f8fafc;
   color: #0f172a;
@@ -73,39 +82,64 @@
 }
 
 .gs-stopwatch-actions button:hover,
-.gs-stopwatch-secondary-toggle:hover {
+.gs-stopwatch-nav:hover {
   background: #f1f5f9;
 }
 
 .gs-stopwatch-submission {
-  margin-top: 8px;
   font-size: 12px;
   color: #475569;
 }
 
-.gs-stopwatch-secondary-toggle {
-  margin-top: 8px;
-  width: 100%;
+.gs-stopwatch-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gs-stopwatch-footer-spacer {
+  width: 28px;
+  height: 28px;
+}
+
+.gs-stopwatch-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 6px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gs-stopwatch-secondary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .gs-stopwatch-secondary {
-  margin-top: 6px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 12px 10px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: center;
 }
 
 .gs-stopwatch-secondary-label {
-  font-size: 11px;
-  color: #64748b;
+  font-size: 12px;
+  color: #475569;
 }
 
 .gs-stopwatch-secondary-time {
-  font-size: 12px;
+  font-size: 24px;
   color: #334155;
   font-variant-numeric: tabular-nums;
   font-weight: 600;

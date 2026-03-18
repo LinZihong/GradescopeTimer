@@ -25,6 +25,7 @@
   let startedAtMs = Date.now();
   let tickerId;
   let lastKnownPath = window.location.pathname;
+  let showingCumulative = false;
 
   let root = document.getElementById(ROOT_ID);
   if (!root) {
@@ -37,20 +38,44 @@
         <span class="gs-stopwatch-dot" aria-hidden="true"></span>
         <span class="gs-stopwatch-title">Gradescope Timer Active</span>
       </div>
-      <div class="gs-stopwatch-main">
-        <span class="gs-stopwatch-time" id="gs-stopwatch-time">00:00</span>
-        <div class="gs-stopwatch-actions">
-          <button type="button" id="gs-stopwatch-toggle">Pause</button>
-          <button type="button" id="gs-stopwatch-reset">Reset</button>
+      <div class="gs-stopwatch-view" id="gs-stopwatch-main-view">
+        <div class="gs-stopwatch-main">
+          <span class="gs-stopwatch-time" id="gs-stopwatch-time">00:00</span>
+          <div class="gs-stopwatch-actions">
+            <button type="button" id="gs-stopwatch-toggle">Pause</button>
+            <button type="button" id="gs-stopwatch-reset">Reset</button>
+          </div>
+        </div>
+        <div class="gs-stopwatch-submission" id="gs-stopwatch-submission"></div>
+        <div class="gs-stopwatch-footer">
+          <span class="gs-stopwatch-footer-spacer" aria-hidden="true"></span>
+          <button
+            type="button"
+            class="gs-stopwatch-nav"
+            id="gs-stopwatch-show-cumulative"
+            aria-label="Show question cumulative time"
+            title="Show question cumulative time"
+          >
+            &#8250;
+          </button>
         </div>
       </div>
-      <div class="gs-stopwatch-submission" id="gs-stopwatch-submission"></div>
-      <button type="button" class="gs-stopwatch-secondary-toggle" id="gs-stopwatch-cumulative-toggle" aria-expanded="false">
-        Show question total
-      </button>
-      <div class="gs-stopwatch-secondary" id="gs-stopwatch-cumulative" hidden>
-        <span class="gs-stopwatch-secondary-label">Question cumulative time</span>
-        <span class="gs-stopwatch-secondary-time" id="gs-stopwatch-cumulative-time">00:00</span>
+      <div class="gs-stopwatch-view" id="gs-stopwatch-cumulative-view" hidden>
+        <div class="gs-stopwatch-secondary-header">
+          <button
+            type="button"
+            class="gs-stopwatch-nav"
+            id="gs-stopwatch-hide-cumulative"
+            aria-label="Back to submission timer"
+            title="Back to submission timer"
+          >
+            &#8249;
+          </button>
+          <span class="gs-stopwatch-secondary-label">Question cumulative time</span>
+        </div>
+        <div class="gs-stopwatch-secondary">
+          <span class="gs-stopwatch-secondary-time" id="gs-stopwatch-cumulative-time">00:00</span>
+        </div>
       </div>
     `;
 
@@ -109,6 +134,23 @@
     if (cumulativeNode) {
       cumulativeNode.textContent = formatDuration(totalMs);
     }
+  }
+
+  function setView(nextView) {
+    showingCumulative = nextView === "cumulative";
+
+    const mainView = root.querySelector("#gs-stopwatch-main-view");
+    const cumulativeView = root.querySelector("#gs-stopwatch-cumulative-view");
+
+    if (showingCumulative) {
+      mainView?.setAttribute("hidden", "");
+      cumulativeView?.removeAttribute("hidden");
+      refreshCumulative();
+      return;
+    }
+
+    cumulativeView?.setAttribute("hidden", "");
+    mainView?.removeAttribute("hidden");
   }
 
   function persist() {
@@ -194,26 +236,13 @@
   function wireEvents() {
     const toggle = root.querySelector("#gs-stopwatch-toggle");
     const resetBtn = root.querySelector("#gs-stopwatch-reset");
-    const cumulativeToggle = root.querySelector("#gs-stopwatch-cumulative-toggle");
-    const cumulative = root.querySelector("#gs-stopwatch-cumulative");
+    const showCumulativeBtn = root.querySelector("#gs-stopwatch-show-cumulative");
+    const hideCumulativeBtn = root.querySelector("#gs-stopwatch-hide-cumulative");
 
     toggle?.addEventListener("click", () => setRunning(!running));
     resetBtn?.addEventListener("click", reset);
-
-    cumulativeToggle?.addEventListener("click", () => {
-      const shouldShow = cumulative?.hasAttribute("hidden");
-      if (shouldShow) {
-        cumulative?.removeAttribute("hidden");
-      } else {
-        cumulative?.setAttribute("hidden", "");
-      }
-
-      cumulativeToggle.setAttribute("aria-expanded", shouldShow ? "true" : "false");
-      cumulativeToggle.textContent = shouldShow ? "Hide question total" : "Show question total";
-      if (shouldShow) {
-        refreshCumulative();
-      }
-    });
+    showCumulativeBtn?.addEventListener("click", () => setView("cumulative"));
+    hideCumulativeBtn?.addEventListener("click", () => setView("main"));
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
@@ -263,6 +292,7 @@
       render();
       persist();
       refreshCumulative();
+      setView(showingCumulative ? "cumulative" : "main");
     });
   }
 
@@ -331,6 +361,7 @@
       render();
       persist();
       refreshCumulative();
+      setView(showingCumulative ? "cumulative" : "main");
       startTicker();
     });
   }
