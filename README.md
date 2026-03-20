@@ -1,6 +1,6 @@
 # Gradescope Submission Stopwatch
 
-A Firefox extension that adds a grading timer directly to Gradescope submission pages.
+A browser extension that adds a grading timer directly to Gradescope submission pages.
 
 It is designed for the common grading workflow where you move from one submission to the next inside Gradescope and want to keep track of how long each one takes.
 
@@ -8,12 +8,22 @@ It is designed for the common grading workflow where you move from one submissio
 
 ## Install
 
+### Chrome / Brave (Chromium-based browsers)
+
+1. Open `chrome://extensions` or `brave://extensions`.
+2. Turn on `Developer mode`.
+3. Click `Load unpacked`.
+4. Select this folder: `GradescopeTimer`.
+5. Open a Gradescope submission grading page.
+
+### Firefox
+
 1. Open Firefox and go to `about:debugging#/runtime/this-firefox`.
 2. Click `Load Temporary Add-on...`.
 3. Select `manifest.json` in this folder.
 4. Open a Gradescope submission grading page.
 
-For permanent installs, package and submit the extension to AMO with the Firefox manifest entry in `manifest.json`.
+For permanent Firefox installs, package and submit the extension to AMO with the Gecko manifest entry in `manifest.json`.
 
 Note: the Gecko `id` in `manifest.json` is a temporary placeholder for local packaging/testing.
 
@@ -46,7 +56,7 @@ A new session starts when the grading page is loaded normally, such as opening i
 
 ## Project Files
 
-- `manifest.json`: Firefox extension manifest
+- `manifest.json`: cross-browser manifest with Firefox metadata
 - `content.js`: timer logic, persistence, SPA handling, and UI behavior
 - `styles.css`: overlay styling
 - `icons/`: extension icons
