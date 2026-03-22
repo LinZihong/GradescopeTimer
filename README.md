@@ -6,6 +6,8 @@ It is designed for the common grading workflow where you move from one submissio
 
 ![Example](demo.png)
 
+**To experience grading faster with out W.A.N.G. method, click on `main` in the menu above and switch over to the `wang` branch.**
+
 ## Install
 
 ### Chrome / Brave (Chromium-based browsers)
