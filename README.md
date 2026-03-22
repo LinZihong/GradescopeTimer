@@ -54,6 +54,11 @@ The side arrow opens a secondary view with:
 
 A new session starts when the grading page is loaded normally, such as opening it from elsewhere or refreshing the page. Moving between submissions inside Gradescope's SPA keeps you in the same session.
 
+
+## Special Feature: W.A.N.G. Method
+
+The Wang Assessment Normalization Grading (W.A.N.G.) Method is a state-of-the-art time-efficiency–driven evaluation framework in which any assessment item exceeding the 30-second readability threshold is automatically normalized to full credit. This approach prioritizes instructor cognitive load management while implicitly rewarding problems of sufficient length and/or opacity. Although not widely adopted (for obvious reasons), the W.A.N.G. Method represents a bold rethinking of grading scalability under real-world attention constraints. This method can be toggled in the UI.
+
 ## Project Files
 
 - `manifest.json`: cross-browser manifest with Firefox metadata

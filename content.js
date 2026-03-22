@@ -28,6 +28,9 @@
   let showingCumulative = false;
   let previousSubmission = null;
   let dragState = null;
+  let autoActioned = false;
+  let wangEnabled = false;
+  const AUTO_ACTION_MS = 30000;
   const sessionVisitedSubmissions = {
     [initialRoute.submissionId]: true
   };
@@ -53,6 +56,14 @@
         </div>
         <div class="gs-stopwatch-submission" id="gs-stopwatch-submission"></div>
         <div class="gs-stopwatch-previous" id="gs-stopwatch-previous" hidden></div>
+        <label class="gs-stopwatch-wang">
+          <span class="gs-stopwatch-wang-text">W.A.N.G. method</span>
+          <span class="gs-stopwatch-wang-tooltip">Wang Assessment Normalization Grading (W.A.N.G.) Method: Any problem that takes longer than 30 seconds to read is automatically normalized to full credit.</span>
+          <span class="gs-stopwatch-wang-switch">
+            <input type="checkbox" id="gs-stopwatch-wang-toggle">
+            <span class="gs-stopwatch-wang-slider"></span>
+          </span>
+        </label>
         <button
           type="button"
           class="gs-stopwatch-nav gs-stopwatch-nav-side"
@@ -360,6 +371,7 @@
       render();
       if (running) {
         persist();
+        triggerAutoAction();
       }
     }, 1000);
   }
@@ -389,8 +401,69 @@
   function reset() {
     elapsedMs = 0;
     startedAtMs = Date.now();
+    autoActioned = false;
     render();
     persist();
+  }
+
+  function applyFirstRubric() {
+    // Case 1: simple rubric item 1
+    const toggleBtn = document.querySelector(
+      'button[aria-label="Toggle rubric item 1"]'
+    );
+    if (toggleBtn) {
+      if (toggleBtn.getAttribute("aria-pressed") !== "true") {
+        toggleBtn.click();
+      }
+      return Promise.resolve();
+    }
+
+    // Case 2: rubric group 1
+    const groupBtn = document.querySelector(
+      'button[aria-label="Expand rubric item group 1"]'
+    );
+    if (!groupBtn) return Promise.resolve();
+
+    const regionId = groupBtn.getAttribute("aria-controls");
+    if (groupBtn.getAttribute("aria-expanded") !== "true") {
+      groupBtn.click();
+    }
+
+    // Wait for group to expand, then click first child item
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const region = regionId && document.getElementById(regionId);
+        if (region) {
+          const childBtn = region.querySelector("button[aria-pressed]");
+          if (childBtn && childBtn.getAttribute("aria-pressed") !== "true") {
+            childBtn.click();
+          }
+        }
+        resolve();
+      }, 200);
+    });
+  }
+
+  function clickNextUngraded() {
+    const btn = document.querySelector("button.js-nextUngraded");
+    if (btn) btn.click();
+  }
+
+  function triggerAutoAction() {
+    if (!wangEnabled || !running || autoActioned || getDisplayElapsedMs() < AUTO_ACTION_MS) {
+      return;
+    }
+
+    autoActioned = true;
+    applyFirstRubric().then(() => setTimeout(clickNextUngraded, 300));
+  }
+
+  function triggerAutoSkip() {
+    if (!wangEnabled) return;
+    if (getDisplayElapsedMs() >= AUTO_ACTION_MS) {
+      autoActioned = true;
+      setTimeout(clickNextUngraded, 300);
+    }
   }
 
   function wireEvents() {
@@ -400,11 +473,17 @@
     const showCumulativeBtn = root.querySelector("#gs-stopwatch-show-cumulative");
     const hideCumulativeBtn = root.querySelector("#gs-stopwatch-hide-cumulative");
 
+    const wangToggle = root.querySelector("#gs-stopwatch-wang-toggle");
+
     titleWrap?.addEventListener("pointerdown", startDragging);
     toggle?.addEventListener("click", () => setRunning(!running));
     resetBtn?.addEventListener("click", reset);
     showCumulativeBtn?.addEventListener("click", () => setView("cumulative"));
     hideCumulativeBtn?.addEventListener("click", () => setView("main"));
+    wangToggle?.addEventListener("change", () => {
+      wangEnabled = wangToggle.checked;
+      safeStorageSet("local", { "gradescope-stopwatch:wang-enabled": wangEnabled });
+    });
 
     window.addEventListener("pointermove", handleDragMove);
     window.addEventListener("pointerup", stopDragging);
@@ -436,6 +515,7 @@
     elapsedMs = 0;
     running = true;
     startedAtMs = Date.now();
+    autoActioned = false;
     sessionVisitedSubmissions[route.submissionId] = true;
 
     const toggle = root.querySelector("#gs-stopwatch-toggle");
@@ -464,6 +544,7 @@
       persist();
       refreshCumulative();
       setView(showingCumulative ? "cumulative" : "main");
+      triggerAutoSkip();
     });
   }
 
@@ -533,7 +614,14 @@
       persist();
       refreshCumulative();
       setView(showingCumulative ? "cumulative" : "main");
+      triggerAutoSkip();
       startTicker();
+    });
+
+    safeStorageGet("local", "gradescope-stopwatch:wang-enabled", (result) => {
+      wangEnabled = result?.["gradescope-stopwatch:wang-enabled"] === true;
+      const wangToggle = root.querySelector("#gs-stopwatch-wang-toggle");
+      if (wangToggle) wangToggle.checked = wangEnabled;
     });
   }
 
